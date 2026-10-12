@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 
 import com.winlator.cmod.core.FileUtils;
 import com.winlator.cmod.core.TarCompressorUtils;
+import com.winlator.cmod.core.WineInfo;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -39,8 +40,21 @@ public class ContentsManager {
             "${libdir}/wine/aarch64-unix/libwow64fex.so",
             "${libdir}/wine/aarch64-unix/libarm64ecfex.so"
     };
+    public static final String[] DX11ADRENO_TRUST_FILES = {
+            "${system32}/d3d11.dll", "${system32}/dxgi.dll",
+            "${libdir}/libdxa.so", "${winelibdir}/aarch64-unix/d3d11.so"
+    };
     private Map<String, String> dirTemplateMap;
     private Map<ContentProfile.ContentType, List<String>> trustedFilesMap;
+
+    // Active wine runtime root (imagefs/opt/<wine>), set by callers before
+    // applyContent so ${wineroot}/${winelibdir} target the container's wine.
+    private String activeWineRoot = null;
+
+    public void setActiveWineRoot(String wineRoot) {
+        this.activeWineRoot = wineRoot;
+        this.dirTemplateMap = null;
+    }
 
     private SharedPreferences preferences;
 
@@ -358,6 +372,11 @@ public class ContentsManager {
             dirTemplateMap.put("${syswow64}", drivecPath + "/windows/syswow64");
             dirTemplateMap.put("${bindir}", imagefsPath + "/usr/bin");
             dirTemplateMap.put("${sharedir}", imagefsPath + "/usr/share");
+            String wineRoot = activeWineRoot != null
+                    ? activeWineRoot
+                    : imagefsPath + "/opt/" + WineInfo.MAIN_WINE_VERSION.identifier();
+            dirTemplateMap.put("${wineroot}", wineRoot);
+            dirTemplateMap.put("${winelibdir}", wineRoot + "/lib/wine");
         }
     }
 
@@ -374,6 +393,7 @@ public class ContentsManager {
                     case CONTENT_TYPE_BOX64 -> BOX64_TRUST_FILES;
                     case CONTENT_TYPE_WOWBOX64 -> WOWBOX64_TRUST_FILES;
                     case CONTENT_TYPE_FEXCORE -> FEXCORE_TRUST_FILES;
+                    case CONTENT_TYPE_DX11ADRENO -> DX11ADRENO_TRUST_FILES;
                     default -> new String[0];
                 };
                 for (String path : paths) pathList.add(Paths.get(getPathFromTemplate(path)).toAbsolutePath().normalize().toString());

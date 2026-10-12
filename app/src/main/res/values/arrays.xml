@@ -37,6 +37,7 @@
         <item>Gamepad</item>
     </string-array>
     <string-array name="dxwrapper_entries">
+        <item>None</item>
         <item>WineD3D</item>
         <item>DXVK+VKD3D</item>
     </string-array>

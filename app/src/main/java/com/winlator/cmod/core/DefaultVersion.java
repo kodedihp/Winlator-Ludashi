@@ -9,4 +9,6 @@ public abstract class DefaultVersion {
     public static final String DXVK = GPUInformation.getRenderer(null, null).contains("Mali") ? "1.10.3" : "2.3.1";
     public static final String D8VK = "1.0";
     public static final String VKD3D = "None";
+    public static final String DX11ADRENO = "native";
+    public static final String DX11ADRENO_CODE = "1";
 }

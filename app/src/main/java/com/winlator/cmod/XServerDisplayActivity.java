@@ -2613,7 +2613,37 @@ public class XServerDisplayActivity extends AppCompatActivity {
         File rootDir = imageFs.getRootDir();
         File windowsDir = new File(rootDir, ImageFs.WINEPREFIX + "/drive_c/windows");
 
-        if (dxwrapper.contains("dxvk")) {
+        if (dxwrapper.equals("none")) {
+            Log.d(TAG, "DXWrapper=None: keep native d3d11/dxgi; apply DX11Adreno content if installed.");
+            ContentProfile dx11Profile = contentsManager.getProfileByEntryName(
+                    "DX11Adreno-" + DefaultVersion.DX11ADRENO + "-" + DefaultVersion.DX11ADRENO_CODE);
+            if (dx11Profile == null) {
+                for (ContentProfile p : contentsManager.getProfiles(ContentProfile.ContentType.CONTENT_TYPE_DX11ADRENO)) {
+                    dx11Profile = p;
+                    break;
+                }
+            }
+            if (dx11Profile != null) {
+                Log.d(TAG, "Applying DX11Adreno content profile: " + ContentsManager.getEntryName(dx11Profile));
+                contentsManager.setActiveWineRoot(imageFs.getWinePath());
+                contentsManager.applyContent(dx11Profile);
+            } else {
+                Log.d(TAG, "No DX11Adreno content profile installed; keeping container DLLs as-is.");
+            }
+
+            // Force Wine to load our native d3d11/dxgi DLLs.
+            File userRegFile = new File(rootDir, ImageFs.WINEPREFIX + "/user.reg");
+            try (WineRegistryEditor registryEditor = new WineRegistryEditor(userRegFile)) {
+                final String dllOverridesKey = "Software\\Wine\\DllOverrides";
+                registryEditor.setStringValue(dllOverridesKey, "d3d11", "native");
+                registryEditor.setStringValue(dllOverridesKey, "dxgi", "native");
+                registryEditor.setStringValue(dllOverridesKey, "d3d10core", "native");
+                registryEditor.setStringValue(dllOverridesKey, "d3d10", "native");
+                registryEditor.setStringValue(dllOverridesKey, "d3d10_1", "native");
+                registryEditor.setStringValue(dllOverridesKey, "wined3d", "builtin");
+            }
+        }
+        else if (dxwrapper.contains("dxvk")) {
             Log.d(TAG, "Extracting DXVK wrapper files, version: " + dxwrapper);
 
             String dxvkWrapper = dxwrapper.split(";")[0];
